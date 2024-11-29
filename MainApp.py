@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sqlalchemy import create_engine, text
 import re  # For extracting the stock ticker from the SQL query
+import pygwalker 
 
 # Function to create a persistent SQLite database engine
 def create_sqlite_engine():
@@ -57,6 +58,7 @@ def extract_ticker_from_query(query):
         return match.group(1)
     return None
 
+# Streamlit app
 # Streamlit app
 def main():
     st.title("Stock Data Management App")
@@ -137,37 +139,12 @@ def main():
         # Display the query result from session state
         if st.session_state.query_result is not None:
             if isinstance(st.session_state.query_result, pd.DataFrame):
+                st.write("### Query Results")
                 st.write(st.session_state.query_result)
 
-                # Plotting functionality
-                st.subheader("Trendline and Chart Plot")
-                column_to_plot = st.selectbox("Select a column to plot:", st.session_state.query_result.columns)
-
-                if column_to_plot:
-                    # Ensure the column is numeric
-                    try:
-                        data = st.session_state.query_result[column_to_plot].astype(float)
-                        dates = pd.to_datetime(st.session_state.query_result['Date'])
-
-                        # Plot the data with a trendline
-                        fig, ax = plt.subplots(figsize=(10, 6))
-                        ax.plot(dates, data, label="Data", color="blue")
-
-                        # Add a trendline
-                        x = np.arange(len(data))
-                        z = np.polyfit(x, data, 1)  # Linear regression
-                        p = np.poly1d(z)
-                        ax.plot(dates, p(x), label="Trendline", color="red", linestyle="--")
-
-                        ax.set_title(f"{column_to_plot} Trendline")
-                        ax.set_xlabel("Date")
-                        ax.set_ylabel(column_to_plot)
-                        ax.legend()
-
-                        st.pyplot(fig)
-
-                    except Exception as e:
-                        st.error(f"Error plotting data: {e}")
+                # Use Pygwalker for visualization
+                st.subheader("Interactive Visualization with Pygwalker")
+                pygwalker.walk(st.session_state.query_result)  # Pygwalker visualization
             else:
                 st.error(st.session_state.query_result)
 
