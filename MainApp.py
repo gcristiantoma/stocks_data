@@ -130,7 +130,19 @@ def main():
         default_ticker = st.session_state.tickers_list[0] if st.session_state.tickers_list else "AAPL"
         query = st.text_area(
     "Enter your SQL query:", 
-    value=f"SELECT * FROM {default_ticker} LIMIT 10",
+    #value=f"SELECT * FROM {default_ticker} LIMIT 10",
+    value=f"""
+SELECT 
+    strftime('%Y-%m-%d', "Date") as Date,
+    "Open" as Open,
+    "High" as High,
+    "Low" as Low,
+    "Close" as Close,
+    "Adj Close" as "Adj Close",
+    "Volume" as Volume
+FROM {default_ticker}
+LIMIT 3;
+"""
     height=300,  # Taller text area
     key="sql_query_input"  # Optional: add a key for component state management
 )
