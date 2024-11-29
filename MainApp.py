@@ -10,7 +10,7 @@ def create_sqlite_engine():
     """
     Creates a persistent SQLite database engine.
     """
-    engine = create_engine("sqlite:///stocks.db", echo=False)  # Persistent database
+    engine = create_engine("sqlite:///stocks.db", echo=False)
     return engine
 
 # Function to extract and store stock data
@@ -40,6 +40,12 @@ def execute_query(query, engine):
         print(f"Executing query: {query}")
         with engine.connect() as connection:
             result = pd.read_sql_query(text(query), connection)
+
+            # Clean up column names - remove table name prefix if present
+            result.columns = [col.split('.')[-1] if '.' in col else col for col in result.columns]
+            # Remove any remaining tuple formatting
+            result.columns = [col[0] if isinstance(col, tuple) else col for col in result.columns]
+
         print("Query executed successfully.")
         return result
     except Exception as e:
@@ -81,7 +87,7 @@ def main():
 
     # Session state to store tickers
     if "tickers_list" not in st.session_state:
-        st.session_state.tickers_list = ["AAPL", "MSFT", "GOOGL"]  # Default tickers
+        st.session_state.tickers_list = ["AAPL", "MSFT", "GOOGL"]
 
     # Session state to store query results
     if "query_result" not in st.session_state:
@@ -89,7 +95,7 @@ def main():
 
     # Session state to store the current selected stock
     if "current_stock" not in st.session_state:
-        st.session_state.current_stock = st.session_state.tickers_list[0]  # Default to the first ticker
+        st.session_state.current_stock = st.session_state.tickers_list[0]
 
     if option == "Extract Data":
         st.subheader("Extract Stock Data")
@@ -102,7 +108,7 @@ def main():
             with st.spinner("Extracting data..."):
                 try:
                     extract_and_store_data(tickers_list, engine)
-                    st.session_state.tickers_list = tickers_list  # Update session state
+                    st.session_state.tickers_list = tickers_list
                     st.success("Data extracted and stored successfully!")
                 except Exception as e:
                     st.error(f"Error: {e}")
@@ -110,19 +116,18 @@ def main():
     elif option == "Query Data":
         st.subheader("Query Stock Data")
 
-        # Use the first ticker from the session state as the default table in the query
+        # Default query setup
         default_ticker = st.session_state.tickers_list[0] if st.session_state.tickers_list else "AAPL"
         query = st.text_area("Enter your SQL query:", f"SELECT * FROM {default_ticker} LIMIT 10")
 
-        # Extract the stock ticker from the query
+        # Extract ticker and validate
         extracted_ticker = extract_ticker_from_query(query)
         if extracted_ticker:
             st.session_state.current_stock = extracted_ticker
 
-        # Display the current selected stock
         st.markdown(f"### Current Selected Stock: `{st.session_state.current_stock}`")
 
-        # Check if the table exists in the database
+        # Check if the table exists
         with engine.connect() as connection:
             table_exists = connection.execute(
                 text(f"SELECT name FROM sqlite_master WHERE type='table' AND name='{st.session_state.current_stock}'")
@@ -132,16 +137,16 @@ def main():
             st.error(f"Table `{st.session_state.current_stock}` does not exist. Please extract data first.")
             return
 
-        # Run the query and store the result in session state
+        # Run query button
         if st.button("Run Query"):
             with st.spinner("Executing query..."):
                 try:
                     result = execute_query(query, engine)
-                    st.session_state.query_result = result  # Store result in session state
+                    st.session_state.query_result = result
                 except Exception as e:
                     st.error(f"Error: {e}")
 
-        # Display the query result from session state
+        # Display results and visualization
         if st.session_state.query_result is not None:
             if isinstance(st.session_state.query_result, pd.DataFrame):
                 st.write("### Query Results")
@@ -150,7 +155,10 @@ def main():
                 # PyGWalker Visualization Section
                 st.subheader("Interactive Visualization with PyGWalker")
 
-                # Initialize the StreamlitRenderer
+                # Clear the cache for PyGWalker renderer when new query is executed
+                st.cache_resource.clear()
+
+                # Initialize the StreamlitRenderer with the latest query results
                 @st.cache_resource
                 def get_pyg_renderer() -> "StreamlitRenderer":
                     return StreamlitRenderer(
@@ -159,11 +167,11 @@ def main():
                         debug=False
                     )
 
-                renderer = get_pyg_renderer()
-
-                # Render the visualization
-                with st.container():
-                    renderer.render_explore()
+                # Create and render the visualization
+                if not st.session_state.query_result.empty:
+                    renderer = get_pyg_renderer()
+                    with st.container():
+                        renderer.render_explore()
             else:
                 st.error(st.session_state.query_result)
 
