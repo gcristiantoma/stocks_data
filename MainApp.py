@@ -132,7 +132,7 @@ def main():
     "Enter your SQL query:", 
     #value=f"SELECT * FROM {default_ticker} LIMIT 10",
     value=f"""
-SELECT 
+    SELECT 
     strftime('%Y-%m-%d', "Date") as Date,
     "Open" as Open,
     "High" as High,
@@ -140,7 +140,7 @@ SELECT
     "Close" as Close,
     "Adj Close" as "Adj Close",
     "Volume" as Volume
-FROM {default_ticker}
+FROM MSFT
 LIMIT 3;
 """
     height=300,  # Taller text area
