@@ -1,11 +1,9 @@
 import streamlit as st
 import yfinance as yf
 import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
 from sqlalchemy import create_engine, text
-import re  # For extracting the stock ticker from the SQL query
-import pygwalker 
+import re
+from pygwalker.api.streamlit import init_streamlit_comm, StreamlitRenderer
 
 # Function to create a persistent SQLite database engine
 def create_sqlite_engine():
@@ -59,8 +57,16 @@ def extract_ticker_from_query(query):
     return None
 
 # Streamlit app
-# Streamlit app
 def main():
+    # Configure Streamlit page
+    st.set_page_config(
+        page_title="Stock Data Management App",
+        layout="wide"
+    )
+
+    # Initialize pygwalker communication
+    init_streamlit_comm()
+
     st.title("Stock Data Management App")
     st.sidebar.header("Options")
 
@@ -106,7 +112,7 @@ def main():
 
         # Use the first ticker from the session state as the default table in the query
         default_ticker = st.session_state.tickers_list[0] if st.session_state.tickers_list else "AAPL"
-        query = st.text_area("Enter your SQL query:", f"SELECT * FROM {default_ticker} LIMIT 100")
+        query = st.text_area("Enter your SQL query:", f"SELECT * FROM {default_ticker} LIMIT 10")
 
         # Extract the stock ticker from the query
         extracted_ticker = extract_ticker_from_query(query)
@@ -124,7 +130,6 @@ def main():
 
         if not table_exists:
             st.error(f"Table `{st.session_state.current_stock}` does not exist. Please extract data first.")
-            print(f"Table `{st.session_state.current_stock}` does not exist.")
             return
 
         # Run the query and store the result in session state
@@ -142,9 +147,23 @@ def main():
                 st.write("### Query Results")
                 st.write(st.session_state.query_result)
 
-                # Use Pygwalker for visualization
-                st.subheader("Interactive Visualization with Pygwalker")
-                pygwalker.walk(st.session_state.query_result)  # Pygwalker visualization
+                # PyGWalker Visualization Section
+                st.subheader("Interactive Visualization with PyGWalker")
+
+                # Initialize the StreamlitRenderer
+                @st.cache_resource
+                def get_pyg_renderer() -> "StreamlitRenderer":
+                    return StreamlitRenderer(
+                        st.session_state.query_result,
+                        spec="./gw_config.json",
+                        debug=False
+                    )
+
+                renderer = get_pyg_renderer()
+
+                # Render the visualization
+                with st.container():
+                    renderer.render_explore()
             else:
                 st.error(st.session_state.query_result)
 
