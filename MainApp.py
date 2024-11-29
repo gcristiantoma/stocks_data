@@ -41,10 +41,20 @@ def execute_query(query, engine):
         with engine.connect() as connection:
             result = pd.read_sql_query(text(query), connection)
 
-            # Clean up column names - remove table name prefix if present
-            result.columns = [col.split('.')[-1] if '.' in col else col for col in result.columns]
-            # Remove any remaining tuple formatting
-            result.columns = [col[0] if isinstance(col, tuple) else col for col in result.columns]
+            # Clean up column names
+            new_columns = []
+            for col in result.columns:
+                if isinstance(col, tuple):
+                    # Take only the first part of the tuple and remove any stock ticker
+                    col_name = col[0].split(',')[0].strip("()'")
+                    new_columns.append(col_name)
+                else:
+                    # Remove any stock ticker suffix if present
+                    col_name = col.split(',')[0].strip("()'")
+                    new_columns.append(col_name)
+
+            # Assign the cleaned column names
+            result.columns = new_columns
 
         print("Query executed successfully.")
         return result
