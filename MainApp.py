@@ -168,14 +168,14 @@ def main():
                     return StreamlitRenderer(
                         st.session_state.query_result,
                         spec="./gw_config.json",
-                        debug=False
+                        spec_io_mode="manual"  # Replace `debug` with `spec_io_mode`
                     )
 
                 # Create and render the visualization
                 if not st.session_state.query_result.empty:
                     renderer = get_pyg_renderer()
                     with st.container():
-                        renderer.render_explore()
+                        renderer.explorer()  # Replace `render_explore` with `explorer`
             else:
                 st.error(st.session_state.query_result)
 
