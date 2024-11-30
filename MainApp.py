@@ -2,6 +2,7 @@ import streamlit as st
 import yfinance as yf
 import pandas as pd
 from sqlalchemy import create_engine, text
+import os
 import re
 from pygwalker.api.streamlit import init_streamlit_comm, StreamlitRenderer
 
@@ -10,7 +11,10 @@ def create_sqlite_engine():
     """
     Creates a persistent SQLite database engine.
     """
-    engine = create_engine("sqlite:///stocks.db", echo=False)
+    db_path = "stocks.db"
+    if not os.path.exists(db_path):
+        open(db_path, "w").close()  # Create an empty database file if it doesn't exist
+    engine = create_engine(f"sqlite:///{db_path}", echo=False)
     return engine
 
 # Function to extract and store stock data
@@ -41,20 +45,10 @@ def execute_query(query, engine):
         with engine.connect() as connection:
             result = pd.read_sql_query(text(query), connection)
 
-            # Clean up column names
-            new_columns = []
-            for col in result.columns:
-                if isinstance(col, tuple):
-                    # Take only the first part of the tuple and remove any stock ticker
-                    col_name = col[0].split(',')[0].strip("()'")
-                    new_columns.append(col_name)
-                else:
-                    # Remove any stock ticker suffix if present
-                    col_name = col.split(',')[0].strip("()'")
-                    new_columns.append(col_name)
-
-            # Assign the cleaned column names
-            result.columns = new_columns
+            # Clean up column names - remove table name prefix if present
+            result.columns = [col.split('.')[-1] if '.' in col else col for col in result.columns]
+            # Remove any remaining tuple formatting
+            result.columns = [col[0] if isinstance(col, tuple) else col for col in result.columns]
 
         print("Query executed successfully.")
         return result
@@ -128,24 +122,8 @@ def main():
 
         # Default query setup
         default_ticker = st.session_state.tickers_list[0] if st.session_state.tickers_list else "AAPL"
-        query = st.text_area(
-    label="Enter your SQL query:",
-    value=(
-        "SELECT \n"
-        "    strftime('%Y-%m-%d', \"Date\") as Date,\n"
-        "    \"Open\" as Open,\n"
-        "    \"High\" as High,\n"
-        "    \"Low\" as Low,\n"
-        "    \"Close\" as Close,\n"
-        "    \"Adj Close\" as \"Adj Close\",\n"
-        "    \"Volume\" as Volume\n"
-        "FROM AAPL\n"
-        " ORDER BY \"Date\" DESC\n"
-        "LIMIT 10;"
-    ),
-    height=300,
-    key="sql_query_input"
-)
+        query = st.text_area("Enter your SQL query:", f"SELECT * FROM {default_ticker} LIMIT 10")
+
         # Extract ticker and validate
         extracted_ticker = extract_ticker_from_query(query)
         if extracted_ticker:
@@ -197,7 +175,7 @@ def main():
                 if not st.session_state.query_result.empty:
                     renderer = get_pyg_renderer()
                     with st.container():
-                        renderer.explorer()
+                        renderer.render_explore()
             else:
                 st.error(st.session_state.query_result)
 
