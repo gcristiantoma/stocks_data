@@ -27,6 +27,10 @@ def extract_and_store_data(tickers, engine):
             print(f"Downloading data for {ticker}...")
             df = yf.download(ticker, period="max")
             df.reset_index(inplace=True)  # Reset index to make 'Date' a column
+
+            # Rename columns to ensure consistent names
+            df.columns = [col.replace(" ", "_") for col in df.columns]
+
             print(f"Data for {ticker} downloaded successfully. Storing in database...")
 
             # Store data in SQLite database
