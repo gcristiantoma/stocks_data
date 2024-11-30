@@ -28,6 +28,9 @@ def extract_and_store_data(tickers, engine):
             df = yf.download(ticker, period="max")
             df.reset_index(inplace=True)  # Reset index to make 'Date' a column
 
+            # Format the Date column to YYYY-MM-DD
+            df['Date'] = pd.to_datetime(df['Date']).dt.strftime('%Y-%m-%d')
+
             # Rename columns to ensure consistent names
             df.columns = [col.replace(" ", "_") for col in df.columns]
 
@@ -51,6 +54,10 @@ def execute_query(query, engine):
 
             # Clean up column names - remove table name prefix or tuple formatting
             result.columns = [col.split('.')[-1] if isinstance(col, str) else col[0] for col in result.columns]
+
+            # Format the Date column if it exists
+            if 'Date' in result.columns:
+                result['Date'] = pd.to_datetime(result['Date']).dt.strftime('%Y-%m-%d')
 
         print("Query executed successfully.")
         return result
