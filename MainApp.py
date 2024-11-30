@@ -129,24 +129,22 @@ def main():
         # Default query setup
         default_ticker = st.session_state.tickers_list[0] if st.session_state.tickers_list else "AAPL"
         query = st.text_area(
-    "Enter your SQL query:", 
-    #value=f"SELECT * FROM {default_ticker} LIMIT 10",
-    value=f"""
-    SELECT 
-    strftime('%Y-%m-%d', "Date") as Date,
-    "Open" as Open,
-    "High" as High,
-    "Low" as Low,
-    "Close" as Close,
-    "Adj Close" as "Adj Close",
-    "Volume" as Volume
-FROM MSFT
-LIMIT 3;
-"""
-    height=300,  # Taller text area
-    key="sql_query_input"  # Optional: add a key for component state management
+    label="Enter your SQL query:",
+    value=(
+        "SELECT \n"
+        "    strftime('%Y-%m-%d', \"Date\") as Date,\n"
+        "    \"Open\" as Open,\n"
+        "    \"High\" as High,\n"
+        "    \"Low\" as Low,\n"
+        "    \"Close\" as Close,\n"
+        "    \"Adj Close\" as \"Adj Close\",\n"
+        "    \"Volume\" as Volume\n"
+        "FROM AAPL\n"
+        "LIMIT 10;"
+    ),
+    height=300,
+    key="sql_query_input"
 )
-
         # Extract ticker and validate
         extracted_ticker = extract_ticker_from_query(query)
         if extracted_ticker:
