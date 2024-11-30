@@ -45,10 +45,8 @@ def execute_query(query, engine):
         with engine.connect() as connection:
             result = pd.read_sql_query(text(query), connection)
 
-            # Clean up column names - remove table name prefix if present
-            result.columns = [col.split('.')[-1] if '.' in col else col for col in result.columns]
-            # Remove any remaining tuple formatting
-            result.columns = [col[0] if isinstance(col, tuple) else col for col in result.columns]
+            # Clean up column names - remove table name prefix or tuple formatting
+            result.columns = [col.split('.')[-1] if isinstance(col, str) else col[0] for col in result.columns]
 
         print("Query executed successfully.")
         return result
