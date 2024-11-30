@@ -140,6 +140,7 @@ def main():
         "    \"Adj Close\" as \"Adj Close\",\n"
         "    \"Volume\" as Volume\n"
         "FROM AAPL\n"
+        " ORDER BY \"Date\" DESC\n"
         "LIMIT 10;"
     ),
     height=300,
@@ -196,7 +197,7 @@ def main():
                 if not st.session_state.query_result.empty:
                     renderer = get_pyg_renderer()
                     with st.container():
-                        renderer.render_explore()
+                        renderer.explorer()
             else:
                 st.error(st.session_state.query_result)
 
