@@ -2,4 +2,3 @@ matplotlib
 yfinance
 pandas
 sqlalchemy
-pygwalker
